@@ -21,9 +21,8 @@
 		<ApplicationId>com.companyname.samplemauiapp</ApplicationId>
 
 		<!-- Versions -->
-		<!-- Fallbacks for local builds. GitHub Actions will override these. -->
-		<ApplicationDisplayVersion Condition="'$(ApplicationDisplayVersion)' == ''">1.0.1</ApplicationDisplayVersion>
-		<ApplicationVersion Condition="'$(ApplicationVersion)' == ''">2</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0.1</ApplicationDisplayVersion>
+		<ApplicationVersion>22</ApplicationVersion>
 
 		<WindowsPackageType>None</WindowsPackageType>
 
