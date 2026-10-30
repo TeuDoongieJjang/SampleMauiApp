@@ -34,3 +34,9 @@ jobs:
     - name: Publish
       run: dotnet publish -c Release -f net10.0-android 
       working-directory: ./SampleMauiApp
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with: 
+        name: Android App
+        path: ./SampleMauiApp/bin/Release/net10.0-android/*.apk
