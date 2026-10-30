@@ -18,6 +18,12 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
+
+    - name: Prepare Android Keystore
+      run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > sample_app.keystore
+          echo "ANDROID_KEY_PASS=${{ secrets.ANDROID_KEY_PASS }}" >> $GITHUB_ENV
+          echo "ANDROID_STORE_PASS=${{ secrets.ANDROID_STORE_PASS }}" >> $GITHUB_ENV
     
     - name: Cache NuGet
       uses: actions/cache@v4
@@ -31,7 +37,7 @@ jobs:
       run: dotnet workload install maui-android
       working-directory: ./SampleMauiApp
 
-    - name: Publish
+    - name: Build and Publish
       run: dotnet publish -c Release -f net10.0-android 
       working-directory: ./SampleMauiApp
 
