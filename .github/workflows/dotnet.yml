@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest 
+    runs-on: ubuntu-latest 
 
     steps:
     - name: Checkout
@@ -18,17 +18,17 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
+    
+    - name: Cache NuGet
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
         
     - name: Install .NET MAUI
       run: dotnet workload install maui 
-      working-directory: ./SampleMauiApp
-      
-    - name: Restore dependencies
-      run: dotnet restore
-      working-directory: ./SampleMauiApp
-      
-    - name: Build
-      run: dotnet build -c Release -f net10.0-android 
       working-directory: ./SampleMauiApp
 
     - name: Publish
@@ -40,3 +40,4 @@ jobs:
       with: 
         name: Android App
         path: ./SampleMauiApp/bin/Release/net10.0-android/*.apk
+        retention-days: 7
