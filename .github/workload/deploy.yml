@@ -8,14 +8,14 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # Fixed typo here
+    runs-on: windows-latest 
 
     steps:
     - uses: actions/checkout@v4
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '10.0.x' # Ensure this version is actually available
+        dotnet-version: '10.0.x'
     - name: Install .NET MAUI
       run: dotnet workload install maui 
     - name: Restore dependencies
