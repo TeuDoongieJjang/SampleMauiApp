@@ -22,8 +22,8 @@
 
 		<!-- Versions -->
 		<!-- Fallbacks for local builds. GitHub Actions will override these. -->
-		<ApplicationDisplayVersion Condition="'$(ApplicationDisplayVersion)' == ''">1.0.0</ApplicationDisplayVersion>
-		<ApplicationVersion Condition="'$(ApplicationVersion)' == ''">1</ApplicationVersion>
+		<ApplicationDisplayVersion Condition="'$(ApplicationDisplayVersion)' == ''">0.0.0</ApplicationDisplayVersion>
+		<ApplicationVersion Condition="'$(ApplicationVersion)' == ''">0</ApplicationVersion>
 
 		<WindowsPackageType>None</WindowsPackageType>
 
