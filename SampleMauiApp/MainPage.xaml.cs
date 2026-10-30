@@ -38,8 +38,8 @@ namespace SampleMauiApp
                 if (updateInfo != null)
                 {
                     bool answer = await DisplayAlertAsync("Update Available",
-                        $"A new version ({updateInfo.Version}) is available. Would you like to download and install it now?",
-                        "Yes", "No");
+                    $"A new version ({updateInfo.Version}) is available. Would you like to download and install it now?",
+                    "Yes", "No");
 
                     if (answer)
                     {

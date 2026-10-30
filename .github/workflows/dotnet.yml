@@ -1,17 +1,9 @@
 name: Build and Release MAUI App
 
 on:
-  workflow_dispatch:
-    inputs:
-      version_type:
-        description: 'Version bump type'
-        required: true
-        default: 'patch'
-        type: choice
-        options:
-        - patch
-        - minor
-        - major
+  push:
+    branches:
+      - main # Triggers automatically when you push to main. Change to 'master' if needed.
 
 permissions:
   contents: write
@@ -24,7 +16,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # Fetch all history so git can push properly
+        fetch-depth: 0 # CRITICAL: GitVersion needs full history to calculate versions
       
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -34,41 +26,23 @@ jobs:
     - name: Install .NET MAUI
       run: dotnet workload install maui-android
       working-directory: ./SampleMauiApp
-        
-    - name: Bump Version
-      id: version_bump
-      shell: bash
-      working-directory: ./SampleMauiApp
+
+    # --- GITVERSION STEPS ---
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v3.0.0
+      with:
+        versionSpec: '6.x'
+
+    - name: Determine Version
+      id: gitversion
+      uses: gittools/actions/gitversion/execute@v3.0.0
+      # This generates variables like steps.gitversion.outputs.semVer (e.g., 1.2.3)
+
+    - name: Output Version
       run: |
-        # 1. Extract current version
-        CURRENT_VERSION=$(grep -oP '(?<=<ApplicationDisplayVersion>)[^<]+' SampleMauiApp.csproj)
-        IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
-        
-        MAJOR=${VERSION_PARTS[0]:-1}
-        MINOR=${VERSION_PARTS[1]:-0}
-        PATCH=${VERSION_PARTS[2]:-0}
-
-        # 2. Calculate new version based on input
-        if [ "${{ github.event.inputs.version_type }}" == "major" ]; then
-          MAJOR=$((MAJOR + 1))
-          MINOR=0
-          PATCH=0
-        elif [ "${{ github.event.inputs.version_type }}" == "minor" ]; then
-          MINOR=$((MINOR + 1))
-          PATCH=0
-        else
-          PATCH=$((PATCH + 1))
-        fi
-
-        NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-        echo "New Version: $NEW_VERSION"
-        
-        # 3. Update csproj
-        sed -i "s|<ApplicationDisplayVersion>.*</ApplicationDisplayVersion>|<ApplicationDisplayVersion>$NEW_VERSION</ApplicationDisplayVersion>|g" SampleMauiApp.csproj
-        sed -i "s|<ApplicationVersion>.*</ApplicationVersion>|<ApplicationVersion>${{ github.run_number }}</ApplicationVersion>|g" SampleMauiApp.csproj
-
-        # 4. Output for later steps
-        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+        echo "GitVersion calculated: ${{ steps.gitversion.outputs.semVer }}"
+        echo "Build Number: ${{ github.run_number }}"
+    # ------------------------
 
     - name: Prepare Android Keystore
       working-directory: ./SampleMauiApp
@@ -78,16 +52,12 @@ jobs:
         echo "ANDROID_STORE_PASS=${{ secrets.ANDROID_STORE_PASS }}" >> $GITHUB_ENV
 
     - name: Build and Publish
-      run: dotnet publish -c Release -f net10.0-android 
       working-directory: ./SampleMauiApp
-
-    - name: Commit and Push Version Bump
+      # We pass the version directly into the build command!
       run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add SampleMauiApp/SampleMauiApp.csproj
-        git commit -m "chore: bump version to v${{ env.NEW_VERSION }} [skip ci]"
-        git push origin HEAD:${{ github.ref_name }}
+        dotnet publish -c Release -f net10.0-android \
+          -p:ApplicationDisplayVersion=${{ steps.gitversion.outputs.semVer }} \
+          -p:ApplicationVersion=${{ github.run_number }}
 
     - name: Create a Tag
       uses: actions/github-script@v6
@@ -98,13 +68,13 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             sha: context.sha,
-            ref: 'refs/tags/v${{ env.NEW_VERSION }}'
+            ref: 'refs/tags/v${{ steps.gitversion.outputs.semVer }}'
           })
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with: 
-        tag_name: v${{ env.NEW_VERSION }}
-        name: Release v${{ env.NEW_VERSION }}
+        tag_name: v${{ steps.gitversion.outputs.semVer }}
+        name: Release v${{ steps.gitversion.outputs.semVer }}
         files: |
           ./SampleMauiApp/bin/Release/net10.0-android/*.apk
