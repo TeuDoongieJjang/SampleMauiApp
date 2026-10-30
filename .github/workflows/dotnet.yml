@@ -32,6 +32,7 @@ jobs:
       working-directory: ./SampleMauiApp
 
     - name: Prepare Android Keystore
+      working-directory: ./SampleMauiApp
       run: |
         echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\n' | base64 --decode > sample_app.keystore
         echo "ANDROID_KEY_PASS=${{ secrets.ANDROID_KEY_PASS }}" >> $GITHUB_ENV
