@@ -47,9 +47,9 @@ jobs:
       id: extractVersion
       shell: pwsh
       run: |
-        $xml = [Xml] (Get-Content ./SampleMauiApp/SampleMauiApp.csproj)
-        [string] $version = [Version] $xml.Project.PropertyGroup.ApplicationDisplayVersion
-        echo "version=$($version)" >> $env:GITHUB_OUTPUT
+        [xml]$xml = Get-Content ./SampleMauiApp/SampleMauiApp.csproj
+        $version = ($xml.Project.PropertyGroup | Where-Object { $_.ApplicationDisplayVersion }).ApplicationDisplayVersion
+        echo "version=$version" >> $env:GITHUB_OUTPUT
 
     - name: Create a Tag
       uses: actions/github-script@v5
