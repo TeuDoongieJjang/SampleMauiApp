@@ -33,7 +33,7 @@ jobs:
 
     - name: Prepare Android Keystore
       run: |
-        echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > sample_app.keystore
+        echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\n' | base64 --decode > sample_app.keystore
         echo "ANDROID_KEY_PASS=${{ secrets.ANDROID_KEY_PASS }}" >> $GITHUB_ENV
         echo "ANDROID_STORE_PASS=${{ secrets.ANDROID_STORE_PASS }}" >> $GITHUB_ENV
 
