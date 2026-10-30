@@ -1,8 +1,17 @@
 name: Build and Release MAUI App
 
 on:
-  push:
-    branches: [ "master" ]
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
 
 permissions:
   contents: write
@@ -20,17 +29,44 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
-    - name: Cache NuGet
-      uses: actions/cache@v4
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
-        
     - name: Install .NET MAUI
       run: dotnet workload install maui-android
       working-directory: ./SampleMauiApp
+        
+    - name: Bump Version
+      id: version_bump
+      shell: bash
+      working-directory: ./SampleMauiApp
+      run: |
+        # 1. Extract current version
+        CURRENT_VERSION=$(grep -oP '(?<=<ApplicationDisplayVersion>)[^<]+' SampleMauiApp.csproj)
+        IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
+        
+        MAJOR=${VERSION_PARTS[0]:-1}
+        MINOR=${VERSION_PARTS[1]:-0}
+        PATCH=${VERSION_PARTS[2]:-0}
+
+        # 2. Calculate new version based on input
+        if [ "${{ github.event.inputs.version_type }}" == "major" ]; then
+          MAJOR=$((MAJOR + 1))
+          MINOR=0
+          PATCH=0
+        elif [ "${{ github.event.inputs.version_type }}" == "minor" ]; then
+          MINOR=$((MINOR + 1))
+          PATCH=0
+        else
+          PATCH=$((PATCH + 1))
+        fi
+
+        NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+        echo "New Version: $NEW_VERSION"
+        
+        # 3. Update csproj
+        sed -i "s|<ApplicationDisplayVersion>.*</ApplicationDisplayVersion>|<ApplicationDisplayVersion>$NEW_VERSION</ApplicationDisplayVersion>|g" SampleMauiApp.csproj
+        sed -i "s|<ApplicationVersion>.*</ApplicationVersion>|<ApplicationVersion>${{ github.run_number }}</ApplicationVersion>|g" SampleMauiApp.csproj
+
+        # 4. Output for later steps
+        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
     - name: Prepare Android Keystore
       working-directory: ./SampleMauiApp
@@ -43,16 +79,8 @@ jobs:
       run: dotnet publish -c Release -f net10.0-android 
       working-directory: ./SampleMauiApp
 
-    - name: Extract Version
-      id: extractVersion
-      shell: pwsh
-      run: |
-        [xml]$xml = Get-Content ./SampleMauiApp/SampleMauiApp.csproj
-        $version = ($xml.Project.PropertyGroup | Where-Object { $_.ApplicationDisplayVersion }).ApplicationDisplayVersion
-        echo "version=$version" >> $env:GITHUB_OUTPUT
-
     - name: Create a Tag
-      uses: actions/github-script@v5
+      uses: actions/github-script@v6
       with: 
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -60,12 +88,13 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             sha: context.sha,
-            ref: 'refs/tags/v${{ steps.extractVersion.outputs.version }}'
+            ref: 'refs/tags/v${{ env.NEW_VERSION }}'
           })
 
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with: 
-        tag_name: v${{ steps.extractVersion.outputs.version }}
+        tag_name: v${{ env.NEW_VERSION }}
+        name: Release v${{ env.NEW_VERSION }}
         files: |
           ./SampleMauiApp/bin/Release/net10.0-android/*.apk
