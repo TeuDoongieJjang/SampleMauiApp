@@ -1,6 +1,18 @@
 workflow: GitHubFlow/v1
 mode: ContinuousDelivery
+
 commit-message-incrementing: Enabled
-major-version-bump-message: '\+semver:\s?(breaking|major)'
-minor-version-bump-message: '\+semver:\s?(feature|minor)'
-patch-version-bump-message: '\+semver:\s?(fix|patch)'
+
+# Major:  feat!:  |  fix!:  |  BREAKING CHANGE:  |  +semver: major
+major-version-bump-message: '(^[a-zA-Z]+(\(.+\))?!:|^BREAKING[ -]CHANGE:|\+semver:\s?(breaking|major))'
+
+# Minor:  feat:  |  feat(scope):  |  +semver: minor
+minor-version-bump-message: '(^feat(\(.+\))?:|\+semver:\s?(feature|minor))'
+
+# Patch:  fix:  |  perf:  |  refactor:  |  chore:  |  etc.  |  +semver: patch
+patch-version-bump-message: '(^(fix|perf|refactor|chore|docs|style|test|build|ci|revert)(\(.+\))?:|\+semver:\s?(fix|patch))'
+
+# No bump: [skip ci] or +semver: none
+no-bump-message: '(\[skip ci\]|\+semver:\s?(none|skip))'
+
+tag-prefix: 'v'
