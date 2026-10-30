@@ -57,6 +57,7 @@
 		<AndroidSigningStorePass>env:ANDROID_STORE_PASS</AndroidSigningStorePass>
 	</PropertyGroup>
 
+	
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-android|AnyCPU'">
 		<AndroidKeyStore>False</AndroidKeyStore>
 	</PropertyGroup>
