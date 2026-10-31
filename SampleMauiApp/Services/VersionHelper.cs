@@ -3,12 +3,16 @@
 public static class VersionHelper
 {
     /// <summary>
-    /// Returns true if <paramref name="candidate"/> is strictly greater than
-    /// <paramref name="baseline"/>. Pre-release/build suffixes are stripped
-    /// before comparison ("1.2.0-alpha.1" → "1.2.0").
+    /// Returns true only when <paramref name="candidate"/> is strictly greater
+    /// than <paramref name="baseline"/> AND the candidate is a full release
+    /// (no pre‑release suffix).
     /// </summary>
     public static bool IsGreater(string? candidate, string? baseline)
     {
+        // Pre‑release versions (e.g. "1.0.1-1") are never considered for update.
+        if (candidate != null && candidate.Contains('-'))
+            return false;
+
         var c = ParseSafe(candidate);
         var b = ParseSafe(baseline);
         if (c is null || b is null) return false;
@@ -19,7 +23,7 @@ public static class VersionHelper
     {
         if (string.IsNullOrWhiteSpace(input)) return null;
 
-        // Strip pre-release ("-alpha.1") and build metadata ("+sha").
+        // Strip pre‑release ("-alpha.1") and build metadata ("+sha").
         var core = input.Split('-', '+')[0];
 
         // System.Version requires at least 2 parts; pad "1" → "1.0".
