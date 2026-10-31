@@ -12,7 +12,7 @@ namespace SampleMauiApp
 
         private void OnCounterClicked(object? sender, EventArgs e)
         {
-            count += 6;
+            count += 7;
 
             if (count == 1)
                 CounterBtn.Text = $"Clicked {count} time";
