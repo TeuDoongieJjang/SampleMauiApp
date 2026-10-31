@@ -10,38 +10,38 @@ public class UpdateService
 
     public async Task<UpdateInfo?> CheckForUpdateAsync(string repoOwner, string repoName)
     {
+        // 1. Do nothing if the device has no internet connection.
+        if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+            return null;
+
         try
         {
             var localVersionName = AppInfo.Current.VersionString;
             var localVersionCode = int.TryParse(AppInfo.Current.BuildString, out var code) ? code : 0;
 
-            // 1. Fetch remote manifest
+            // 2. Fetch remote manifest
             var manifestUrl = $"https://github.com/{repoOwner}/{repoName}/releases/latest/download/version.json";
             var manifestJson = await _httpClient.GetStringAsync(manifestUrl);
 
             var manifest = JsonSerializer.Deserialize<VersionManifest>(manifestJson, _jsonOptions);
 
             if (manifest is null || string.IsNullOrWhiteSpace(manifest.VersionName))
-            {
-                throw new Exception("version.json is empty or malformed.");
-            }
+                return null;
 
-            // 2. Check versions
+            // 3. Reject any pre‑release version in the manifest.
+            if (manifest.VersionName.Contains('-'))
+                return null;
+
+            // 4. Check versions
             var codeIsNewer = manifest.VersionCode > localVersionCode;
             var nameIsNewer = VersionHelper.IsGreater(manifest.VersionName, localVersionName);
 
             var updateAvailable = manifest.VersionCode > 0 ? codeIsNewer : nameIsNewer;
 
             if (!updateAvailable)
-            {
-                // Show an alert so we know the check succeeded, but no update is needed
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                    Application.Current!.MainPage!.DisplayAlertAsync("Debug: No Update",
-                        $"Check succeeded.\nLocal Code: {localVersionCode}\nRemote Code: {manifest.VersionCode}\n\nNo update needed.", "OK"));
                 return null;
-            }
 
-            // 3. Build Download URL
+            // 5. Build download URL
             var apkFileName = !string.IsNullOrWhiteSpace(manifest.ApkFileName)
                 ? manifest.ApkFileName
                 : $"SampleMauiApp-{manifest.VersionName}.apk";
@@ -56,11 +56,9 @@ public class UpdateService
                 ReleaseNotes = manifest.ReleaseNotes
             };
         }
-        catch (Exception ex)
+        catch
         {
-            // SHOW THE ERROR ON SCREEN
-            await MainThread.InvokeOnMainThreadAsync(() =>
-                Application.Current!.MainPage!.DisplayAlertAsync("Debug: Update Failed", ex.Message, "OK"));
+            // 6. Silently ignore any error (network failure, malformed JSON, etc.)
             return null;
         }
     }
