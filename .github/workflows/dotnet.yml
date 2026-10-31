@@ -60,33 +60,25 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const semVer = `${{ steps.gitversion.outputs.semVer }}`;
-            const tag = `v${semVer}`;
+            const tag = `v${{ steps.gitversion.outputs.MajorMinorPatch }}`; 
             const { owner, repo } = context.repo;
 
-            // 1. Check if the tag already exists
             try {
               await github.rest.git.getRef({ owner, repo, ref: `tags/${tag}` });
               console.log(`Tag ${tag} already exists – skipping.`);
-              return;
             } catch (e) {
               if (e.status !== 404) throw e;
+              await github.rest.git.createRef({
+                owner, repo, sha: context.sha, ref: `refs/tags/${tag}`
+              });
+              console.log(`Tag ${tag} created.`);
             }
-
-            // 2. Create the tag
-            await github.rest.git.createRef({
-              owner, repo, sha: context.sha, ref: `refs/tags/${tag}`
-            });
-            console.log(`Tag ${tag} created.`);
 
       - name: Generate version manifest
         working-directory: ./SampleMauiApp
         run: |
-          # Discover the APK filename produced by the build.
-          # Release + signed builds produce "<ApplicationId>-Signed.apk".
           APK_FILE=$(basename "$(ls bin/Release/net10.0-android/*-Signed.apk 2>/dev/null | head -n1)" 2>/dev/null || true)
           if [ -z "$APK_FILE" ]; then
-            # Fallback for unsigned / debug builds
             APK_FILE=$(basename "$(ls bin/Release/net10.0-android/*.apk 2>/dev/null | head -n1)" 2>/dev/null || true)
           fi
           if [ -z "$APK_FILE" ]; then
@@ -113,8 +105,8 @@ jobs:
         if: startsWith(github.event.head_commit.message, 'release-')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.gitversion.outputs.semVer }}
-          name: Release v${{ steps.gitversion.outputs.semVer }}
+          tag_name: v${{ steps.gitversion.outputs.MajorMinorPatch }}
+          name: Release v${{ steps.gitversion.outputs.MajorMinorPatch }}
           allowUpdates: true
           files: |
             ./SampleMauiApp/bin/Release/net10.0-android/*.apk
