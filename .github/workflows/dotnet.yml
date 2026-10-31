@@ -27,13 +27,13 @@ jobs:
         working-directory: ./SampleMauiApp
 
       - name: Setup GitVersion
-        uses: gittools/actions/gitversion/setup@v3.0.0
+        uses: gittools/actions/gitversion/setup@v4
         with:
           versionSpec: '6.x'
 
       - name: Execute GitVersion
         id: gitversion
-        uses: gittools/actions/gitversion/execute@v3.0.0
+        uses: gittools/actions/gitversion/execute@v4
 
       - name: Show calculated version
         run: |
