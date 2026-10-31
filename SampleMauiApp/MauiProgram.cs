@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Maui.LifecycleEvents;
 
 namespace SampleMauiApp
 {
@@ -15,8 +16,16 @@ namespace SampleMauiApp
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
+#if ANDROID
+            builder.ConfigureLifecycleEvents(events =>
+            {
+                events.AddAndroid(android => android
+                    .OnResume(_ => SampleMauiApp.Services.ApkInstaller.OnActivityResumed()));
+            });
+#endif
+
 #if DEBUG
-    		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
 
             return builder.Build();

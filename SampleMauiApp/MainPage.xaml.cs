@@ -26,6 +26,10 @@ namespace SampleMauiApp
         {
             base.OnAppearing();
 
+            // Don't re-check while an update is already in progress
+            if (ApkInstaller.IsUpdateInProgress)
+                return;
+
             var updateService = new UpdateService();
             var updateInfo = await updateService.CheckForUpdateAsync("TeuDoongieJjang", "SampleMauiApp");
 
