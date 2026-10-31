@@ -1,19 +1,12 @@
 workflow: GitHubFlow/v1
-mode: ContinuousDelivery          # or ContinuousDeployment for unique pre-release every commit
+mode: ContinuousDelivery
 
 commit-message-incrementing: Enabled
 
-# --- Custom bump regexes (match the prefix at the start of the commit message) ---
-major-version-bump-message: '^major:'
-minor-version-bump-message: '^minor:'
-patch-version-bump-message: '^patch:'
+# Match both 'patch:' and 'release-patch:'
+patch-version-bump-message: '^(release-)?patch:'
+minor-version-bump-message: '^(release-)?minor:'
+major-version-bump-message: '^(release-)?major:'
 
-# Optional: still support Conventional Commits as a fallback
-# major-version-bump-message: '^(?:major:|[a-zA-Z]+(\(.+\))?!:|BREAKING[ -]CHANGE:)'
-# minor-version-bump-message: '^(?:minor:|feat(\(.+\))?:)'
-# patch-version-bump-message: '^(?:patch:|(?:fix|perf|refactor|chore|docs|style|test|build|ci|revert)(\(.+\))?:)'
-
-# Do not bump for [skip ci] or +semver: none
 no-bump-message: '(\[skip ci\]|\+semver:\s?(none|skip))'
-
 tag-prefix: 'v'
