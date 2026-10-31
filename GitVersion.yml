@@ -1,5 +1,6 @@
 workflow: GitHubFlow/v1
 mode: ContinuousDelivery          # or ContinuousDeployment for unique pre-release every commit
+next-version: 1.0.0
 
 commit-message-incrementing: Enabled
 
