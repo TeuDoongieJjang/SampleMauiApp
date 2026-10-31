@@ -12,45 +12,49 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0          # GitVersion needs full history
 
-      - uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      - name: Install .NET MAUI
+      - name: Install .NET MAUI workload
         run: dotnet workload install maui-android
         working-directory: ./SampleMauiApp
 
-      - uses: gittools/actions/gitversion/setup@v3.0.0
+      - name: Setup GitVersion
+        uses: gittools/actions/gitversion/setup@v3.0.0
         with:
           versionSpec: '6.x'
 
-      - id: gitversion
+      - name: Execute GitVersion
+        id: gitversion
         uses: gittools/actions/gitversion/execute@v3.0.0
 
-      - name: Output Version
+      - name: Show calculated version
         run: |
-          echo "GitVersion: ${{ steps.gitversion.outputs.semVer }}"
-          echo "Build:      ${{ github.run_number }}"
+          echo "GitVersion SemVer: ${{ steps.gitversion.outputs.semVer }}"
+          echo "Build number (run_number): ${{ github.run_number }}"
 
-      - name: Prepare Android Keystore
+      - name: Prepare Android keystore
         working-directory: ./SampleMauiApp
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\n' | base64 --decode > sample_app.keystore
           echo "ANDROID_KEY_PASS=${{ secrets.ANDROID_KEY_PASS }}"     >> $GITHUB_ENV
           echo "ANDROID_STORE_PASS=${{ secrets.ANDROID_STORE_PASS }}" >> $GITHUB_ENV
 
-      - name: Build and Publish
+      - name: Build and publish
         working-directory: ./SampleMauiApp
         run: |
           dotnet publish -c Release -f net10.0-android \
             -p:ApplicationDisplayVersion=${{ steps.gitversion.outputs.semVer }} \
             -p:ApplicationVersion=${{ github.run_number }}
 
-      - name: Create Tag (idempotent)
+      - name: Create tag idempotent
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -68,7 +72,37 @@ jobs:
               console.log(`Tag ${tag} created.`);
             }
 
-      - name: Create Release
+      - name: Generate version manifest
+        working-directory: ./SampleMauiApp
+        run: |
+          # Discover the APK filename produced by the build.
+          # Release + signed builds produce "<ApplicationId>-Signed.apk".
+          APK_FILE=$(basename "$(ls bin/Release/net10.0-android/*-Signed.apk 2>/dev/null | head -n1)" 2>/dev/null || true)
+          if [ -z "$APK_FILE" ]; then
+            # Fallback for unsigned / debug builds
+            APK_FILE=$(basename "$(ls bin/Release/net10.0-android/*.apk 2>/dev/null | head -n1)" 2>/dev/null || true)
+          fi
+          if [ -z "$APK_FILE" ]; then
+            echo "ERROR: no APK found in bin/Release/net10.0-android" >&2
+            ls -la bin/Release/net10.0-android || true
+            exit 1
+          fi
+          echo "Detected APK: $APK_FILE"
+
+          cat > bin/Release/net10.0-android/version.json <<JSON
+          {
+            "versionName": "${{ steps.gitversion.outputs.semVer }}",
+            "versionCode": ${{ github.run_number }},
+            "apkFileName": "$APK_FILE",
+            "releaseNotes": "Release ${{ steps.gitversion.outputs.semVer }} (build ${{ github.run_number }})"
+          }
+          JSON
+
+          echo "----- version.json -----"
+          cat bin/Release/net10.0-android/version.json
+          echo "------------------------"
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.gitversion.outputs.semVer }}
@@ -76,3 +110,4 @@ jobs:
           allowUpdates: true
           files: |
             ./SampleMauiApp/bin/Release/net10.0-android/*.apk
+            ./SampleMauiApp/bin/Release/net10.0-android/version.json

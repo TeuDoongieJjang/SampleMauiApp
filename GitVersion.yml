@@ -1,18 +1,19 @@
 workflow: GitHubFlow/v1
-mode: ContinuousDelivery
+mode: ContinuousDelivery          # or ContinuousDeployment for unique pre-release every commit
 
 commit-message-incrementing: Enabled
 
-# Major:  feat!:  |  fix!:  |  BREAKING CHANGE:  |  +semver: major
-major-version-bump-message: '(^[a-zA-Z]+(\(.+\))?!:|^BREAKING[ -]CHANGE:|\+semver:\s?(breaking|major))'
+# --- Custom bump regexes (match the prefix at the start of the commit message) ---
+major-version-bump-message: '^major:'
+minor-version-bump-message: '^minor:'
+patch-version-bump-message: '^patch:'
 
-# Minor:  feat:  |  feat(scope):  |  +semver: minor
-minor-version-bump-message: '(^feat(\(.+\))?:|\+semver:\s?(feature|minor))'
+# Optional: still support Conventional Commits as a fallback
+# major-version-bump-message: '^(?:major:|[a-zA-Z]+(\(.+\))?!:|BREAKING[ -]CHANGE:)'
+# minor-version-bump-message: '^(?:minor:|feat(\(.+\))?:)'
+# patch-version-bump-message: '^(?:patch:|(?:fix|perf|refactor|chore|docs|style|test|build|ci|revert)(\(.+\))?:)'
 
-# Patch:  fix:  |  perf:  |  refactor:  |  chore:  |  etc.  |  +semver: patch
-patch-version-bump-message: '(^(fix|perf|refactor|chore|docs|style|test|build|ci|revert)(\(.+\))?:|\+semver:\s?(fix|patch))'
-
-# No bump: [skip ci] or +semver: none
+# Do not bump for [skip ci] or +semver: none
 no-bump-message: '(\[skip ci\]|\+semver:\s?(none|skip))'
 
 tag-prefix: 'v'
