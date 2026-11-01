@@ -35,12 +35,7 @@ namespace SampleMauiApp
 
             if (updateInfo != null)
             {
-                bool answer = await DisplayAlertAsync(
-                    "Update Available",
-                    $"Version {updateInfo.Version} is available " +
-                    $"– you have build {AppInfo.Current.BuildString}.\n\n" +
-                    "Download and install now?",
-                    "Yes", "No");
+                bool answer = await DisplayAlertAsync("Update Available", "Download and install now?", "Yes", "No");
 
                 if (answer)
                 {
